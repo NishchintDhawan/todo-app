@@ -2,7 +2,7 @@ const Router = require("express"); // import Router from express
 const { todoService } = require("../services");
 const { auth } = require("./auth"); // import auth custom middlewares
 const httpStatus = require("http-status");
-const { check, validationResult } = require("express-validator");
+const { body, validationResult, check } = require("express-validator");
 const router = Router();
 
 // Todo Routes
@@ -31,21 +31,31 @@ router.get("/self", auth, async (req, res) => {
 router.post(
   "/",
   auth,
-  check("category", "Category is required").notEmpty(),
-  check("isCompleted", "isCompleted status is required").notEmpty(),
-  check("title", "Title is required").notEmpty(),
-  check("description", "Description is required").notEmpty(),
-  async (req, res) => {
+  [
+    check("category").not().isEmpty(),
+    check("isCompleted").not().isEmpty(),
+    check("title").not().isEmpty(),
+    check("description").not().isEmpty(),
+  ],
+  async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(httpStatus.BAD_REQUEST).json({ errors: errors.mapped() });
+      err = {
+        status: httpStatus.BAD_REQUEST,
+        message: "Missing parameters",
+      };
+      next(err);
     }
     const { username } = req.user;
     req.body.username = username;
 
     const createTodo = await todoService.createTodo(req.body);
     if (createTodo.error) {
-      res.status(httpStatus.BAD_REQUEST).json({ error: createTodo.error });
+      err = {
+        status: httpStatus.BAD_REQUEST,
+        message: createTodo.error,
+      };
+      next(err);
     }
     res.status(httpStatus.CREATED).send();
   }
@@ -62,7 +72,11 @@ router.put("/:id", auth, async (req, res) => {
     );
     res.json(updatedTodo);
   } catch (error) {
-    res.status(httpStatus.BAD_REQUEST).json({ error: "Error updating todo" });
+    err = {
+      status: httpStatus.BAD_REQUEST,
+      message: "Error updating todo",
+    };
+    next(err);
   }
 });
 
@@ -74,7 +88,11 @@ router.delete("/:id", auth, async (req, res) => {
     const deleteTodo = await todoService.deleteTodo(username, _id);
     res.json(deleteTodo);
   } catch (error) {
-    res.status(httpStatus.BAD_REQUEST).json({ error: "Error deleting todo" });
+    err = {
+      status: httpStatus.BAD_REQUEST,
+      message: "Error deleting todo",
+    };
+    next(err);
   }
 });
 

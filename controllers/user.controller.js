@@ -14,7 +14,7 @@ router.post(
   }),
   async (req, res) => {
     const errors = validationResult(req);
-
+    if()
     if (!errors.isEmpty()) {
       res.status(httpStatus.BAD_REQUEST).json({ error: errors.mapped() });
     }
