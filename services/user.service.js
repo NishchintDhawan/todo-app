@@ -3,10 +3,10 @@ const User = require("../database/models/user");
 const bcrypt = require("bcryptjs"); // import bcrypt to hash passwords
 const jwt = require("jsonwebtoken"); // import jwt to sign tokens
 const httpStatus = require("http-status");
-const { catcher } = require("../utils");
+const { error } = require("../utils");
 
 const createUser = (userBody) => {
-  return catcher.catcher(
+  return error.catcher(
     async (userBody) => {
       const { username, password } = userBody;
       const checkUser = await User.findOne({ username: username });
@@ -28,7 +28,7 @@ const createUser = (userBody) => {
 };
 
 const loginUser = (userBody) => {
-  return catcher.catcher(
+  return error.catcher(
     async (userBody) => {
       const { username, password } = userBody;
       const user = await User.findOne({ username: username });

@@ -1,6 +1,6 @@
 const Router = require("express"); // import Router from express
 const { todoService } = require("../services");
-const { auth } = require("./auth"); // import auth custom middlewares
+const { auth } = require("../middleware/auth"); // import auth custom middlewares
 const httpStatus = require("http-status");
 const { check, validationResult } = require("express-validator");
 const router = Router();

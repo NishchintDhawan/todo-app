@@ -1,1 +1,1 @@
-module.exports.catcher = require('./errorcatcher');
+module.exports.error = require('./error.catcher');

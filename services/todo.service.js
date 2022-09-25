@@ -1,10 +1,10 @@
 require("dotenv").config();
 const Todo = require("../database/models/todo");
 const httpStatus = require("http-status");
-const { catcher } = require("../utils");
+const { error } = require("../utils");
 
 const createTodo = (todoBody) => {
-  return catcher.catcher(
+  return error.catcher(
     async (todoBody) => {
       const result = await Todo.create(todoBody);
       return { status: httpStatus.OK, result };
@@ -15,14 +15,14 @@ const createTodo = (todoBody) => {
 };
 
 const getTodos = () => {
-  return catcher.catcher(async () => {
+  return error.catcher(async () => {
     const result = await Todo.find({});
     return { status: httpStatus.OK, result };
   }, "Error creating Todo");
 };
 
 const updateTodo = (params) => {
-  return catcher.catcher(
+  return error.catcher(
     async (params) => {
       const todo = await Todo.findOneAndUpdate(
         { username: params.user, _id: params.id },
@@ -40,7 +40,7 @@ const updateTodo = (params) => {
 };
 
 const getTodosByFilter = (params) => {
-  return catcher.catcher(
+  return error.catcher(
     async (params) => {
       const query = {};
       query[params.filter] = params.value;
@@ -53,7 +53,7 @@ const getTodosByFilter = (params) => {
 };
 
 const getSelfTodos = (params) => {
-  return catcher.catcher(
+  return error.catcher(
     async (params) => {
       const result = await Todo.find({ username: params.user });
       return { status: httpStatus.OK, result };
@@ -64,7 +64,7 @@ const getSelfTodos = (params) => {
 };
 
 const deleteTodo = (params) => {
-  return catcher.catcher(
+  return error.catcher(
     async () => {
       const result = await Todo.findOneAndDelete({
         username: params.username,
