@@ -8,34 +8,58 @@ const filters = { 1: "category", 2: "username" };
 
 // Todo Routes
 // Get all Todos for all users, doesnt need to be auth.
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   //optional parameter of filter
   const todos = await todoService.getTodos();
-  res.json(todos);
-});
 
-router.get("/:category/:value", async (req, res) => {
-  const filter = req.params.category;
-  const value = req.params.value;
-  if (Object.values(filters).includes(filter)) {
-    const todos = await todoService.getTodosByFilter(filter, value);
-    res.json(todos);
+  if (todos.status >= httpStatus.BAD_REQUEST) {
+    const err = {
+      status: todos.status,
+      message: todos.error,
+    };
+    next(err);
   } else {
-    res.status(httpStatus.BAD_REQUEST).json({ errors: "Invalid filter" });
+    res.json(todos.result);
   }
 });
 
-router.get("/self", auth, async (req, res) => {
-  const { username } = req.user;
-  const todos = await todoService.getSelfTodos(username);
-  if (!todos) {
+router.get("/:category/:value", async (req, res, next) => {
+  const filter = req.params.category;
+  const value = req.params.value;
+
+  if (Object.values(filters).includes(filter)) {
+    const todos = await todoService.getTodosByFilter(filter, value);
+
+    if (todos.status >= httpStatus.BAD_REQUEST) {
+      const err = {
+        status: todos.status,
+        message: todos.error,
+      };
+      return next(err);
+    }
+    res.json(todos.result);
+  } else {
     const err = {
       status: httpStatus.BAD_REQUEST,
-      message: "Error fetching Todos",
+      message: "Invalid filter",
+    };
+    next(err);
+  }
+});
+
+router.get("/self", auth, async (req, res, next) => {
+  const { username } = req.user;
+  const todos = await todoService.getSelfTodos(username);
+
+  if (todos.status >= httpStatus.BAD_REQUEST) {
+    const err = {
+      status: todos.status,
+      message: todos.error,
     };
     return next(err);
   }
-  res.json(todos);
+
+  res.json(todos.result);
 });
 
 // // // Create a Todo. Get the user auth token from middleware
@@ -61,14 +85,16 @@ router.post(
     req.body.username = username;
 
     const createTodo = await todoService.createTodo(req.body);
-    if (!createTodo) {
+
+    if (createTodo.status >= httpStatus.BAD_REQUEST) {
       err = {
-        status: httpStatus.BAD_REQUEST,
-        message: "Error creating Todo",
+        status: createTodo.status,
+        message: createTodo.error,
       };
       next(err);
     } else {
-      res.status(httpStatus.CREATED).send();
+      //return created todo ?
+      res.status(httpStatus.CREATED).json(createTodo.result);
     }
   }
 );
@@ -80,30 +106,32 @@ router.put("/:id", auth, async (req, res, next) => {
 
   const updatedTodo = await todoService.updateTodo(username, _id, req.body);
 
-  if (!updatedTodo) {
+  if (updatedTodo.status > httpStatus.BAD_REQUEST) {
     err = {
-      status: httpStatus.BAD_REQUEST,
-      message: "Error updating todo",
+      status: updatedTodo.status,
+      message: updatedTodo.error,
     };
     next(err);
   } else {
-    res.json(updatedTodo);
+    res.json(updatedTodo.result);
   }
 });
 
 // Delete a TODO use DELETE.
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, async (req, res, next) => {
   const { username } = req.user;
   const _id = req.params.id;
-  try {
-    const deleteTodo = await todoService.deleteTodo(username, _id);
-    res.json(deleteTodo);
-  } catch (error) {
+
+  const deleteTodo = await todoService.deleteTodo(username, _id);
+
+  if (!deleteTodo) {
     err = {
-      status: httpStatus.BAD_REQUEST,
+      status: httpStatus.INTERNAL_SERVER_ERROR,
       message: "Error deleting todo",
     };
     next(err);
+  } else {
+    res.json(deleteTodo);
   }
 });
 

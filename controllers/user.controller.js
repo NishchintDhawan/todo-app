@@ -10,28 +10,27 @@ router.post(
   check("username", "Username is required").notEmpty(),
   check("password", "Password is required").notEmpty(),
   check("password", "Password cannot be less than 5 characters").isLength({
-    min: 8,
+    min: 5,
   }),
   async (req, res, next) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      const err = { status: 400, message: "Invalid parameters given" };
+      const err = {
+        status: httpStatus.BAD_REQUEST,
+        message: "Invalid parameters given",
+      };
       return next(err);
     }
 
     const { username, password } = req.body;
-    try {
-      const signup = await userService.createUser({ username, password });
-      if (signup.error) {
-        const err = { status: 400, message: signup.error };
-        return next(err);
-      } else {
-        res.status(httpStatus.CREATED).send();
-      }
-    } catch (error) {
-      const err = { status: 400, message: "Error creating user" };
-      return next(err);
+
+    const signup = await userService.createUser({ username, password });
+    if (signup.status >= httpStatus.BAD_REQUEST) {
+      const err = { status: signup.status, message: signup.error };
+      next(err);
+    } else {
+      res.status(httpStatus.CREATED).send();
     }
   }
 );
@@ -48,21 +47,19 @@ router.post(
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-      res
-        .status(httpStatus.BAD_REQUEST)
-        .json({ error: "Invalid parameters given" });
-    }
-    try {
-      const login = await userService.loginUser({ username, password });
-      if (login.error) {
-        const err = { status: 400, message: login.error };
-        return next(err);
-      } else {
-        res.json({ token: login.token });
-      }
-    } catch (error) {
-      const err = { status: 400, message: "Error creating user" };
+      const err = {
+        status: httpStatus.BAD_REQUEST,
+        message: "Invalid parameters given",
+      };
       return next(err);
+    }
+
+    const login = await userService.loginUser({ username, password });
+    if (login.status >= httpStatus.BAD_REQUEST) {
+      const err = { status: login.status, message: login.error };
+      return next(err);
+    } else {
+      res.json({ token: login.token });
     }
   }
 );
