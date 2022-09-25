@@ -5,7 +5,7 @@ const { log } = require("mercedlogger"); // import mercedlogger's log function
 const cors = require("cors"); // import cors
 const UserRouter = require("./controllers/user.controller"); //import User Routes
 const TodoRouter = require("./controllers/todo.controller"); // import Todo Routes
-const { errorHandler } = require("./middleware/error");
+const { errorHandler } = require("./middleware/error.handler");
 
 const { PORT = 3000 } = process.env;
 
