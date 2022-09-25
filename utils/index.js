@@ -1,0 +1,1 @@
+module.exports.catcher = require('./errorcatcher');

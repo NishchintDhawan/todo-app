@@ -4,7 +4,7 @@ const { Schema, model } = require("../connect"); // import Schema & model
 const TodoSchema = new Schema({
   username: { type: String, required: true },
   category: { type: String, required: true },
-  IsCompleted: { type: Boolean, required: true, default: false },
+  isCompleted: { type: Boolean, required: true, default: false },
   title: { type: String, required: true },
   description: { type: String, required: true },
 });

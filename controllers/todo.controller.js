@@ -9,7 +9,6 @@ const filters = { 1: "category", 2: "username" };
 // Todo Routes
 // Get all Todos for all users, doesnt need to be auth.
 router.get("/", async (req, res, next) => {
-  //optional parameter of filter
   const todos = await todoService.getTodos();
 
   if (todos.status >= httpStatus.BAD_REQUEST) {
@@ -28,7 +27,7 @@ router.get("/:category/:value", async (req, res, next) => {
   const value = req.params.value;
 
   if (Object.values(filters).includes(filter)) {
-    const todos = await todoService.getTodosByFilter(filter, value);
+    const todos = await todoService.getTodosByFilter({ filter, value });
 
     if (todos.status >= httpStatus.BAD_REQUEST) {
       const err = {
@@ -76,7 +75,7 @@ router.post(
     if (!errors.isEmpty()) {
       const err = {
         status: httpStatus.BAD_REQUEST,
-        message: "Invalid parameters given",
+        message: "Missing parameters",
       };
       return next(err);
     }
@@ -93,7 +92,6 @@ router.post(
       };
       next(err);
     } else {
-      //return created todo ?
       res.status(httpStatus.CREATED).json(createTodo.result);
     }
   }
@@ -104,9 +102,13 @@ router.put("/:id", auth, async (req, res, next) => {
   const { username } = req.user;
   const _id = req.params.id;
 
-  const updatedTodo = await todoService.updateTodo(username, _id, req.body);
+  const updatedTodo = await todoService.updateTodo({
+    user: username,
+    id: _id,
+    todoBody: req.body,
+  });
 
-  if (updatedTodo.status > httpStatus.BAD_REQUEST) {
+  if (updatedTodo.status >= httpStatus.BAD_REQUEST) {
     err = {
       status: updatedTodo.status,
       message: updatedTodo.error,
@@ -122,16 +124,16 @@ router.delete("/:id", auth, async (req, res, next) => {
   const { username } = req.user;
   const _id = req.params.id;
 
-  const deleteTodo = await todoService.deleteTodo(username, _id);
+  const deleteTodo = await todoService.deleteTodo({ username, id: _id });
 
-  if (!deleteTodo) {
+  if (deleteTodo.status >= httpStatus.BAD_REQUEST) {
     err = {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      message: "Error deleting todo",
+      status: deleteTodo.status,
+      message: deleteTodo.error,
     };
     next(err);
   } else {
-    res.json(deleteTodo);
+    res.status(deleteTodo.status).send();
   }
 });
 

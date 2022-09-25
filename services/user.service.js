@@ -3,63 +3,53 @@ const User = require("../database/models/user");
 const bcrypt = require("bcryptjs"); // import bcrypt to hash passwords
 const jwt = require("jsonwebtoken"); // import jwt to sign tokens
 const httpStatus = require("http-status");
+const { catcher } = require("../utils");
 
-const createUser = async (userBody) => {
-  const { username, password } = userBody;
-  try {
-    const checkUser = await User.findOne({ username: username });
-    if (checkUser) {
-      return { status: httpStatus.BAD_REQUEST, error: "User already exists" };
-    }
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error creating user",
-    };
-  }
+const createUser = (userBody) => {
+  return catcher.catcher(
+    async (userBody) => {
+      const { username, password } = userBody;
+      const checkUser = await User.findOne({ username: username });
+      if (checkUser) {
+        return { status: httpStatus.BAD_REQUEST, error: "User already exists" };
+      }
 
-  userBody.password = await bcrypt.hash(password, 10);
+      userBody.password = await bcrypt.hash(password, 10);
 
-  try {
-    const user = await User.create(userBody);
-    if (!user) {
-      return { status: httpStatus.BAD_REQUEST, error: "Error creating user" };
-    }
-    return user;
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error creating user",
-    };
-  }
+      const user = await User.create(userBody);
+      if (!user) {
+        return { status: httpStatus.BAD_REQUEST, error: "Error creating user" };
+      }
+      return user;
+    },
+    userBody,
+    "Error creating user"
+  );
 };
 
-const loginUser = async (userBody) => {
-  const { username, password } = userBody;
+const loginUser = (userBody) => {
+  return catcher.catcher(
+    async (userBody) => {
+      const { username, password } = userBody;
+      const user = await User.findOne({ username: username });
 
-  try {
-    const user = await User.findOne({ username: username });
+      if (!user) {
+        return { status: httpStatus.BAD_REQUEST, error: "User not found" };
+      }
 
-    if (!user) {
-      return { status: httpStatus.BAD_REQUEST, error: "User not found" };
-    }
+      const verifyPassword = await bcrypt.compare(password, user.password);
 
-    const verifyPassword = await bcrypt.compare(password, user.password);
-
-    if (verifyPassword) {
-      const token = jwt.sign({ username: user.username }, process.env.SECRET);
-      return { token };
-    } else {
-      return { status: httpStatus.BAD_REQUEST, error: "Invalid password" };
-    }
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error logging in user",
-    };
-  }
+      if (verifyPassword) {
+        const token = jwt.sign({ username: user.username }, process.env.SECRET);
+        return { token };
+      } else {
+        return { status: httpStatus.BAD_REQUEST, error: "Invalid password" };
+      }
+    },
+    userBody,
+    "Error logging in user"
+  );
 };
-
 module.exports = {
   createUser,
   loginUser,

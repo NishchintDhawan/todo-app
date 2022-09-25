@@ -1,86 +1,86 @@
 require("dotenv").config();
 const Todo = require("../database/models/todo");
 const httpStatus = require("http-status");
+const { catcher } = require("../utils");
 
-const createTodo = async (todoBody) => {
-  try {
-    const result = await Todo.create(todoBody);
-    return { status: httpStatus.OK, result };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error creating Todo",
-    };
-  }
+const createTodo = (todoBody) => {
+  return catcher.catcher(
+    async (todoBody) => {
+      const result = await Todo.create(todoBody);
+      return { status: httpStatus.OK, result };
+    },
+    todoBody,
+    "Error creating Todo"
+  );
 };
 
-const getTodos = async () => {
-  try {
+const getTodos = () => {
+  return catcher.catcher(async () => {
     const result = await Todo.find({});
     return { status: httpStatus.OK, result };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error creating Todo",
-    };
-  }
+  }, "Error creating Todo");
 };
 
-const updateTodo = async (user, id, todoBody) => {
-  try {
-    const todo = await Todo.findOneAndUpdate(
-      { username: user, _id: id },
-      todoBody,
-      {
-        new: true,
-        useFindAndModify: false,
+const updateTodo = (params) => {
+  return catcher.catcher(
+    async (params) => {
+      const todo = await Todo.findOneAndUpdate(
+        { username: params.user, _id: params.id },
+        params.todoBody,
+        {
+          new: true,
+          useFindAndModify: false,
+        }
+      );
+      return { status: httpStatus.OK, result: todo};
+    },
+    params,
+    "Error updating Todo"
+  );
+};
+
+const getTodosByFilter = (params) => {
+  return catcher.catcher(
+    async (params) => {
+      const query = {};
+      query[params.filter] = params.value;
+      const result = await Todo.find(query);
+      return { status: httpStatus.OK, result };
+    },
+    params,
+    "Error fetching Todos"
+  );
+};
+
+const getSelfTodos = (params) => {
+  return catcher.catcher(
+    async (params) => {
+      const result = await Todo.find({ username: params.user });
+      return { status: httpStatus.OK, result };
+    },
+    params,
+    "Error fetching Todos"
+  );
+};
+
+const deleteTodo = (params) => {
+  return catcher.catcher(
+    async () => {
+      const result = await Todo.findOneAndDelete({
+        username: params.username,
+        _id: params.id,
+      });
+      if (!result) {
+        return {
+          status: httpStatus.BAD_REQUEST,
+          error: "Error deleting Todo",
+        };
       }
-    );
-    return { status: httpStatus.OK, result: todo };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      error: "Error updating Todo",
-    };
-  }
-};
-
-const getTodosByFilter = async (filter, value) => {
-  const query = {};
-  query[filter] = value;
-  try {
-    const result = await Todo.find(query);
-    return { status: httpStatus.OK, result };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      message: "Error fetching Todos",
-    };
-  }
-};
-
-const getSelfTodos = async (user) => {
-  try {
-    const result = await Todo.find({ username: user });
-    return { status: httpStatus.OK, result };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      message: "Error fetching Todos",
-    };
-  }
-};
-
-const deleteTodo = async (username, _id) => {
-  try {
-    const result = await Todo.findOneAndDelete({ username, _id });
-    return { status: httpStatus.OK, result };
-  } catch (error) {
-    return {
-      status: httpStatus.INTERNAL_SERVER_ERROR,
-      message: "Error fetching Todos",
-    };
-  }
+      return { status: httpStatus.OK, result };
+    },
+    params,
+    "Error deleting Todo"
+  );
 };
 
 module.exports = {
