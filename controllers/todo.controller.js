@@ -4,7 +4,7 @@ const { auth } = require("../middleware/auth"); // import auth custom middleware
 const httpStatus = require("http-status");
 const { check, validationResult } = require("express-validator");
 const router = Router();
-const filters = { 1: "category", 2: "username" };
+const filters = { 1: "category", 2: "username", 3: "title", 4: "isCompleted" };
 
 // Todo Routes
 // Get all Todos for all users, doesnt need to be auth.
