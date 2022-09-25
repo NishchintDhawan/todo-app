@@ -2,6 +2,7 @@ const Router = require("express"); // import Router from express
 const { todoService } = require("../services");
 const { auth } = require("./auth"); // import auth custom middlewares
 const httpStatus = require("http-status");
+const { check, validationResult } = require("express-validator");
 const router = Router();
 
 // Todo Routes
@@ -27,21 +28,28 @@ router.get("/self", auth, async (req, res) => {
 });
 
 // // // Create a Todo. Get the user auth token from middleware
-router.post("/", auth, async (req, res) => {
-  const { username } = req.user;
-  const { category, isCompleted, title, description } = req.body;
-  req.body.username = username;
+router.post(
+  "/",
+  auth,
+  check("category", "Category is required").notEmpty(),
+  check("isCompleted", "isCompleted status is required").notEmpty(),
+  check("title", "Title is required").notEmpty(),
+  check("description", "Description is required").notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(httpStatus.BAD_REQUEST).json({ errors: errors.mapped() });
+    }
+    const { username } = req.user;
+    req.body.username = username;
 
-  if (category && isCompleted != undefined && title && description) {
     const createTodo = await todoService.createTodo(req.body);
     if (createTodo.error) {
       res.status(httpStatus.BAD_REQUEST).json({ error: createTodo.error });
     }
     res.status(httpStatus.CREATED).send();
-  } else {
-    res.status(httpStatus.BAD_REQUEST).json({ error: "Missing parameters" });
   }
-});
+);
 
 // Update a TODO, use PUT.
 router.put("/:id", auth, async (req, res) => {

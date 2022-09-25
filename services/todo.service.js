@@ -16,7 +16,10 @@ const updateTodo = async (user, todoBody) => {
 };
 
 const getTodosByFilter = async (filter, value) => {
-  return Todo.find({});
+  query = {};
+  query[filter] = value;
+  console.log(query);
+  return Todo.find({ "$filter": new ObjectID(value) });
 };
 
 const getSelfTodos = async (user) => {
