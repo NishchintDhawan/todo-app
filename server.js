@@ -5,6 +5,7 @@ const { log } = require("mercedlogger"); // import mercedlogger's log function
 const cors = require("cors"); // import cors
 const UserRouter = require("./controllers/user.controller"); //import User Routes
 const TodoRouter = require("./controllers/todo.controller"); // import Todo Routes
+const { errorHandler } = require("./middleware/error");
 
 const { PORT = 3000 } = process.env;
 
@@ -20,5 +21,5 @@ app.get("/", (req, res) => {
 });
 app.use("/user", UserRouter); // send all "/user" requests to UserRouter for routing
 app.use("/todos", TodoRouter); // send all "/todos" request to TodoROuter
-
+app.use(errorHandler);
 app.listen(PORT, () => log.green("SERVER STATUS", `Listening on port ${PORT}`));

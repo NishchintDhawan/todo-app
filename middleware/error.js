@@ -1,8 +1,9 @@
 require("dotenv").config(); // loading env variables
 
-const errorHandler = async (error, req, res, next) => {
-  const status = error.status || 400;
-  res.status(status).json({ error: error.message });
+const errorHandler = async (err, req, res, next) => {
+  const status = err.status || 400;
+  const error = { error: err.message }
+  res.status(status).send(error);
 };
 
 module.exports = {

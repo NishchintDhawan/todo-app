@@ -2,8 +2,9 @@ const Router = require("express"); // import Router from express
 const { todoService } = require("../services");
 const { auth } = require("./auth"); // import auth custom middlewares
 const httpStatus = require("http-status");
-const { body, validationResult, check } = require("express-validator");
+const { check, validationResult } = require("express-validator");
 const router = Router();
+const filters = { 1: "category", 2: "username" };
 
 // Todo Routes
 // Get all Todos for all users, doesnt need to be auth.
@@ -14,16 +15,26 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:category/:value", async (req, res) => {
-  const filter = req.params.id;
-  const value = req.params.id;
-  //verify value from ENUM -> user validators.
-  const todos = await todoService.getTodosByFilter(filter, value);
-  res.json(todos);
+  const filter = req.params.category;
+  const value = req.params.value;
+  if (Object.values(filters).includes(filter)) {
+    const todos = await todoService.getTodosByFilter(filter, value);
+    res.json(todos);
+  } else {
+    res.status(httpStatus.BAD_REQUEST).json({ errors: "Invalid filter" });
+  }
 });
 
 router.get("/self", auth, async (req, res) => {
   const { username } = req.user;
   const todos = await todoService.getSelfTodos(username);
+  if (!todos) {
+    const err = {
+      status: httpStatus.BAD_REQUEST,
+      message: "Error fetching Todos",
+    };
+    return next(err);
+  }
   res.json(todos);
 });
 
@@ -31,52 +42,52 @@ router.get("/self", auth, async (req, res) => {
 router.post(
   "/",
   auth,
-  [
-    check("category").not().isEmpty(),
-    check("isCompleted").not().isEmpty(),
-    check("title").not().isEmpty(),
-    check("description").not().isEmpty(),
-  ],
+  check("category").not().isEmpty(),
+  check("isCompleted").not().isEmpty(),
+  check("title").not().isEmpty(),
+  check("description").not().isEmpty(),
   async (req, res, next) => {
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-      err = {
+      const err = {
         status: httpStatus.BAD_REQUEST,
-        message: "Missing parameters",
+        message: "Invalid parameters given",
       };
-      next(err);
+      return next(err);
     }
+
     const { username } = req.user;
     req.body.username = username;
 
     const createTodo = await todoService.createTodo(req.body);
-    if (createTodo.error) {
+    if (!createTodo) {
       err = {
         status: httpStatus.BAD_REQUEST,
-        message: createTodo.error,
+        message: "Error creating Todo",
       };
       next(err);
+    } else {
+      res.status(httpStatus.CREATED).send();
     }
-    res.status(httpStatus.CREATED).send();
   }
 );
 
 // Update a TODO, use PUT.
-router.put("/:id", auth, async (req, res) => {
+router.put("/:id", auth, async (req, res, next) => {
   const { username } = req.user;
   const _id = req.params.id;
-  try {
-    const updatedTodo = await todoService.updateTodo(
-      { username, _id },
-      req.body
-    );
-    res.json(updatedTodo);
-  } catch (error) {
+
+  const updatedTodo = await todoService.updateTodo(username, _id, req.body);
+
+  if (!updatedTodo) {
     err = {
       status: httpStatus.BAD_REQUEST,
       message: "Error updating todo",
     };
     next(err);
+  } else {
+    res.json(updatedTodo);
   }
 });
 
